@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func GetContainerStats(containerID string) (map[string]string, error) {
+func ContainerStats(containerID string) (map[string]string, error) {
 	stats := make(map[string]string)
 
 	cmd := exec.Command("docker", "stats", "--no-stream", "--format",
