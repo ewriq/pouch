@@ -3,6 +3,7 @@ package pouch
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 func Inspect(id string) (string, error) {
@@ -11,5 +12,5 @@ func Inspect(id string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("inspect error: %v\noutput: %s", err, out)
 	}
-	return string(out), nil 
+	return strings.TrimSpace(string(out)), nil
 }
