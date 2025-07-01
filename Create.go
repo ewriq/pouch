@@ -35,7 +35,7 @@ func Create(opt CreateOptions) (string, error) {
 	}
 
 	if opt.Port != "" {
-		args = append(args, "-p", opt.Port+":3306")
+		args = append(args, "-p", opt.Port)
 	}
 
 	if opt.HostDataDir != "" {
