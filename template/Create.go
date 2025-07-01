@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"github.com/ewriq/pouch" 
+	"github.com/ewriq/pouch/container" 
 )
 
 func main() {
