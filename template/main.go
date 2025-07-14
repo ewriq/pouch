@@ -8,12 +8,12 @@ import (
 
 func main() {
 	fmt.Println("--- Create For MySql Container ---")
-	opt := pouch.Container.CreateOptions{
-		Name:  "my-nginx-dssdsdsdsd",
+	opt := pouch.CreateOptions{
+		Name:  "azazazaza",
 		Image: "mysql:8.0",
 		Port:  "8080", 
 	}
-	id, err := pouch.Container.Create(opt)
+	id, err := pouch.Create(opt)
 	if err != nil {
 		log.Printf("Error for creating container: %v", err)
 	} else {
