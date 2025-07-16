@@ -1,4 +1,4 @@
-package pouch
+package image
 
 import (
 	"fmt"
