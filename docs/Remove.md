@@ -1,8 +1,10 @@
-### `pouch.Remove` Fonksiyonu Açıklaması
 
-Bu Go kodu, `pouch` paketi içinde yer alan `Remove` adında bir fonksiyonu tanımlar. Fonksiyonun temel amacı, belirtilen bir Docker konteynerini sistemden kalıcı olarak kaldırmaktır. Bu işlem, arka planda `docker rm` komutunu çalıştırarak gerçekleştirilir. Ayrıca, çalışan bir konteyneri zorla kaldırma seçeneği sunarak esneklik sağlar.
 
-#### Kod Bloğu
+### `pouch.Remove` Function Explanation
+
+This Go code defines a function named `Remove` in the `pouch` package. The primary purpose of this function is to permanently delete a specified Docker container from the system. It achieves this by running the `docker rm` command in the background. Additionally, it offers flexibility by allowing forceful removal of running containers.
+
+#### Code Block
 
 ```go
 package pouch
@@ -13,99 +15,102 @@ import (
 	"strings"
 )
 
-// Remove, belirtilen ID'ye sahip bir Docker konteynerini kaldırır.
-// 'force' parametresi true ise, çalışan bir konteyneri zorla kaldırır (-f).
-// Başarılı olduğunda kaldırılan konteynerin ID'sini döndürür.
+// Remove removes a Docker container with the given ID.
+// If the 'force' parameter is true, it forcibly removes a running container using the '-f' flag.
+// On success, it returns the ID of the removed container.
 func Remove(id string, force bool) (string, error) {
-	// "docker rm" komutunun temel argümanlarını hazırla.
+	// Prepare the basic arguments for the "docker rm" command.
 	args := []string{"rm"}
-	
-	// Eğer force parametresi true ise, komuta "-f" (force) bayrağını ekle.
+
+	// If force is true, append the "-f" flag to forcibly remove the container.
 	if force {
 		args = append(args, "-f")
 	}
 
-	// Kaldırılacak konteynerin ID'sini argümanların sonuna ekle.
+	// Append the container ID to the command arguments.
 	args = append(args, id)
 
-	// Docker komutunu oluştur.
+	// Create the Docker command.
 	cmd := exec.Command("docker", args...)
 
-	// Komutu çalıştır ve standart çıktı ile standart hatayı birleştir.
+	// Run the command and capture both stdout and stderr.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// Hata durumunda, hem Go hatasını hem de Docker'ın çıktısını içeren
-		// detaylı bir hata mesajı döndür.
-		return "", fmt.Errorf("kaldırma hatası: %v\nçıktı: %s", err, out)
+		// Return a detailed error message including the Go error and Docker output.
+		return "", fmt.Errorf("removal error: %v\noutput: %s", err, out)
 	}
-	
-	// Docker rm başarılı olduğunda kaldırılan konteynerin ID'sini döndürür.
-	// Bu çıktıyı temizleyip geri ver.
+
+	// On success, return the trimmed output (container ID or name).
 	return strings.TrimSpace(string(out)), nil
 }
 ```
 
-### Fonksiyon Detayları
+### Function Details
 
-1.  **Dinamik Argüman Oluşturma**:
-    Fonksiyon, `args := []string{"rm"}` ile `docker rm` komutunun temel argümanlarını oluşturarak işe başlar. Ardından `if force { ... }` bloğu ile `force` parametresinin durumunu kontrol eder. Eğer `force` parametresi `true` olarak ayarlanmışsa, `-f` bayrağı `args` dilimine eklenir. Bu bayrak, `docker rm` komutuna çalışan bir konteyneri bile durdurup kaldırması talimatını verir.
+1. **Dynamic Argument Construction**:
+   The function begins with `args := []string{"rm"}` to set up the base arguments for the `docker rm` command. Then, it checks if the `force` parameter is `true`. If so, it adds the `-f` flag to the `args` slice. This flag instructs Docker to stop and remove the container even if it's currently running.
 
-2.  **Komutun Tamamlanması**:
-    `args = append(args, id)` satırıyla, kaldırılacak konteynerin ID'si veya adı argüman listesinin sonuna eklenir. Böylece, çalıştırılacak tam komut (`docker rm [-f] [id]`) dinamik olarak oluşturulmuş olur.
+2. **Completing the Command**:
+   By appending the container ID or name using `args = append(args, id)`, the function completes the command to be executed dynamically: `docker rm [-f] [id]`.
 
-3.  **Komutu Çalıştırma ve Hata Yönetimi**:
-    `cmd.CombinedOutput()` ile oluşturulan komut çalıştırılır. `docker rm` komutu, çalışan bir konteyneri `force` bayrağı olmadan kaldırmaya çalışırsa veya belirtilen ID'ye sahip bir konteyner bulamazsa hata verir. `CombinedOutput` sayesinde hem bu hata mesajları hem de başarılı durumda Docker'ın döndürdüğü çıktı yakalanır. Bir hata (`err != nil`) durumunda, sorunun kaynağını belirlemeye yardımcı olmak için hem Go hatasını hem de Docker'ın çıktısını içeren zengin bir hata mesajı döndürülür.
+3. **Executing the Command and Error Handling**:
+   The function executes the command using `cmd.CombinedOutput()`. If Docker cannot find the container or it’s running without the `-f` flag, the command fails. This output (both stdout and stderr) is captured for debugging. If an error occurs, the function returns a detailed error including both the Go error and Docker's own output.
 
-4.  **Başarılı Çıktının Döndürülmesi**:
-    `docker rm` komutu başarıyla çalıştığında, kaldırdığı konteynerin ID'sini veya adını standart çıktıya yazar. Fonksiyon bu çıktıyı (`out`) yakalar, `strings.TrimSpace` ile olası baştaki ve sondaki boşlukları temizler ve bu temizlenmiş metni (kaldırılan konteynerin ID'si) `string` olarak geri döndürür.
+4. **Returning Success Output**:
+   If the command runs successfully, Docker writes the removed container’s ID or name to stdout. The function captures this, trims any whitespace, and returns it.
 
-### Parametreler
+### Parameters
 
-*   `id (string)`: Kaldırılacak olan Docker konteynerinin kimliği (ID) veya adı.
-*   `force (bool)`: Konteynerin zorla kaldırılıp kaldırılmayacağını belirten bir boolean değeri.
-    *   `true`: Konteyner çalışıyorsa bile durdurulur ve kaldırılır (`docker rm -f`).
-    *   `false`: Konteyner çalışıyorsa komut hata verir ve konteyner kaldırılmaz.
+* `id (string)`: The ID or name of the Docker container to be removed.
+* `force (bool)`: Boolean indicating whether the container should be forcibly removed.
 
-### Dönüş Değeri
+  * `true`: The container will be stopped and removed even if running (`docker rm -f`).
+  * `false`: The command will fail if the container is running.
 
-*   `string`: İşlem başarılı olursa, kaldırılan konteynerin ID'si veya adı.
-*   `error`:
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   Eğer konteyner bulunamazsa, `force` `false` iken konteyner çalışıyorsa veya başka bir Docker hatası oluşursa, detaylı bilgi içeren bir hata nesnesi döndürülür.
+### Return Values
 
-### Bağımlılıklar
+* `string`: If successful, returns the ID or name of the removed container.
+* `error`:
 
-*   Bu fonksiyonun çalışabilmesi için sistemde **Docker'ın kurulu** ve `docker` komutunun `PATH` içinde erişilebilir olması gerekir.
+  * Returns `nil` on success.
+  * Returns an error object with details if the container is not found, is running without force, or another Docker error occurs.
 
-### Kullanım Örneği
+### Dependencies
 
-`old-container` adında durdurulmuş bir konteyneri ve `live-container` adında çalışan bir konteyneri kaldırma senaryoları:
+* Docker must be installed on the system.
+* The `docker` command must be available in the system’s `PATH`.
+
+### Example Usage
+
+Here are two scenarios: removing a stopped container called `old-container`, and forcibly removing a running container called `live-container`.
 
 ```go
 package main
 
 import (
 	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
+	"github.com/your-username/your-project/pouch" // Replace with your actual import path
 )
 
 func main() {
-	// Senaryo 1: Durdurulmuş bir konteyneri kaldırma (force=false)
+	// Scenario 1: Remove a stopped container (force = false)
 	stoppedContainerID := "old-container"
 	removedID, err := pouch.Remove(stoppedContainerID, false)
 	if err != nil {
-		log.Printf("'%s' konteyneri kaldırılırken hata oluştu: %v", stoppedContainerID, err)
+		log.Printf("Error removing container '%s': %v", stoppedContainerID, err)
 	} else {
-		log.Printf("Konteyner '%s' başarıyla kaldırıldı.", removedID)
+		log.Printf("Container '%s' was removed successfully.", removedID)
 	}
 
-	// Senaryo 2: Çalışan bir konteyneri zorla kaldırma (force=true)
+	// Scenario 2: Forcibly remove a running container (force = true)
 	runningContainerID := "live-container"
 	removedIDForced, err := pouch.Remove(runningContainerID, true)
 	if err != nil {
-		log.Printf("'%s' konteyneri zorla kaldırılırken hata oluştu: %v", runningContainerID, err)
+		log.Printf("Error forcibly removing container '%s': %v", runningContainerID, err)
 	} else {
-		log.Printf("Çalışan konteyner '%s' başarıyla zorla kaldırıldı.", removedIDForced)
+		log.Printf("Running container '%s' was forcibly removed successfully.", removedIDForced)
 	}
 }
 ```
+
+

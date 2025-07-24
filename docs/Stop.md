@@ -1,90 +1,87 @@
+### `pouch.Restart` Function Description
 
-### `pouch.Stop` Fonksiyonu Açıklaması
-
-Bu Go kodu, `pouch` paketi içinde yer alan `Stop` adında bir fonksiyonu tanımlar. Fonksiyonun temel amacı, çalışan bir Docker konteynerini güvenli bir şekilde durdurmaktır. Bu işlem, arka planda `docker stop` komutunu çalıştırarak gerçekleştirilir ve işlemin başarı veya başarısızlık durumunu bir `error` değeriyle bildirir.
-
-#### Kod Bloğu
+This Go code defines a function named `Restart` in the `pouch` package. The primary purpose of the function is to restart a specific Docker container that is either stopped or running. This operation is performed by executing the `docker restart` command in the background, and upon successful completion, it returns the ID of the restarted container.
 
 ```go
 package pouch
 
 import (
-	"fmt"
-	"os/exec"
-)
+    “fmt”
+    “os/exec”
+    “strings”)
 
-// Stop, belirtilen ID'ye sahip bir Docker konteynerini durdurur.
-func Stop(id string) error {
-	// "docker stop [id]" komutunu oluştur.
-	cmd := exec.Command("docker", "stop", id)
 
-	// Komutu çalıştır ve standart çıktı ile standart hatayı birleştir.
-	// docker stop başarılı olduğunda konteynerin ID'sini çıktı olarak verir,
-	// bu bilgi hata ayıklama için yakalanır.
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		// Hata durumunda, hem orijinal hatayı hem de komutun çıktısını
-		// içeren açıklayıcı bir hata mesajı döndür.
-		// Not: Orijinal koddaki "start error" muhtemelen bir yazım hatasıydı, "stop error" olmalı.
-		return fmt.Errorf("stop hatası: %v, çıktı: %s", err, string(out))
-	}
+// Restart restarts a Docker container with the specified ID.
+// If successful, it returns the ID of the restarted container.
+func Restart(id string) (string, error) {
+    // Build the “docker restart [id]” command.
+    cmd := exec.Command(“docker”, “restart”, id)
+
+    // Run the command and combine the standard output and standard error.
+    out, err := cmd.CombinedOutput()
+	if err != nil:
+        // In case of an error, return an explanatory error message containing both the original error and the command output.
+        return “”, fmt.Errorf(“restart error: %v\noutput: %s”, err, out)
+    }
 	
-	// İşlem başarılıysa nil (hata yok) döndür.
-	return nil
+	// Returns the container ID when the docker restart is successful.
+    // Trim this output and return it.
+    return strings.TrimSpace(string(out)), nil
 }
 ```
 
-### Fonksiyon Detayları
+### Function Details
 
-1.  **Komut Oluşturma**:
-    `exec.Command("docker", "stop", id)` satırı, terminalde `docker stop [containerID]` komutunu çalıştırmak için bir komut nesnesi hazırlar. `docker stop` komutu, konteynere varsayılan olarak bir `SIGTERM` sinyali gönderir ve belirli bir süre içinde (genellikle 10 saniye) kapanmasını bekler. Kapanmazsa bir `SIGKILL` sinyali göndererek zorla sonlandırır.
+1.  **Command Creation**:
+    The line `exec.Command(“docker”, “restart”, id)` creates a command object to run the command `docker restart [containerID]` in the terminal. This command starts the target container if it is stopped; if it is running, it stops it first and then restarts it.
 
-2.  **Komutu Çalıştırma ve Çıktıyı Yakalama**:
-    `cmd.CombinedOutput()` fonksiyonu, oluşturulan komutu çalıştırır. Bir konteyner başarıyla durdurulduğunda, `docker stop` komutu durdurulan konteynerin ID'sini standart çıktıya yazar. Bir hata durumunda ise (örneğin konteyner bulunamadığında) hata mesajını standart hataya yazar. `CombinedOutput` fonksiyonu, her iki çıktıyı da tek bir `out` değişkeninde toplayarak, özellikle hata durumlarında Docker'ın döndürdüğü mesajı görmeyi sağlar.
+2.  **Executing the Command and Capturing the Output**:  
+    The `cmd.CombinedOutput()` function executes the created command. When the `docker restart` command is successful, it writes the ID of the restarted container to standard output. In case of an error (e.g., if the container cannot be found), it writes the error message to standard error. `CombinedOutput` captures both streams, collecting both the successful result and the error details in a single `out` variable.
 
-3.  **Hata Kontrolü**:
-    `if err != nil` bloğu, komutun sıfırdan farklı bir çıkış koduyla sonlanıp sonlanmadığını kontrol eder. Eğer belirtilen ID'ye sahip bir konteyner mevcut değilse veya Docker servisi (daemon) çalışmıyorsa, `docker stop` komutu hata verir. Fonksiyon bu hatayı yakalar ve `fmt.Errorf` kullanarak hem Go'nun genel hata bilgisini (`err`) hem de Docker'ın ürettiği spesifik çıktıyı (`out`) içeren detaylı bir hata mesajı oluşturur.
+3.  **Error Checking**:
+    The `if err != nil` block checks whether the command ended with a non-zero exit code. If there is no container with the specified ID, the `docker restart` command returns an error. The function catches this error and uses `fmt.Errorf` to create a detailed error message containing both the Go-level error (`err`) and the specific error message from Docker (`out`).
 
-4.  **Başarılı Durum**:
-    Komut başarıyla çalışırsa, `err` değişkeni `nil` olur. Fonksiyon, işlemin başarılı olduğunu belirtmek için `nil` değeri döndürür. Başarılı durumda konteynerin ID'sini döndürmez, çünkü asıl amaç işlemi gerçekleştirmektir.
+4.  **Processing Successful Output**:
+When the command completes successfully, the `out` byte array containing the container ID provided as output by `docker restart` is converted to text using `string(out)`. This output usually ends with a line break character. `strings.TrimSpace` removes this unnecessary space, returning only the pure container ID.
 
-### Parametreler
+### Parameters
 
-*   `id (string)`: Durdurulacak olan çalışan Docker konteynerinin kimliği (ID) veya adı.
+*   `id (string)`: The ID or name of the Docker container to be restarted.
 
-### Dönüş Değeri
+### Return Value
 
-*   `error`: Fonksiyon bir `error` değeri döndürür.
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   Eğer konteyner bulunamazsa, zaten durdurulmuşsa veya başka bir Docker hatası oluşursa, detaylı bilgi içeren bir hata nesnesi döndürülür.
+*   `string`: If the operation is successful, the ID or name of the restarted container.
+*   `error`:
+*   If the operation is successful, this value is `nil`.
+*   If the container cannot be found or another Docker error occurs, an error object containing detailed information is returned.
 
-### Bağımlılıklar
+### Dependencies
 
-*   Bu fonksiyonun çalışabilmesi için, kodu yürüten sistemde **Docker'ın yüklü olması** ve `docker` komutunun sistemin `PATH` değişkeni üzerinden erişilebilir olması gerekmektedir.
+*   For this function to work, **Docker must be installed** on the system running the code, and the `docker` command must be accessible via the system's `PATH` variable.
 
-### Kullanım Örneği
+### Usage Example
 
-Sistemde `my-nginx-proxy` adında çalışan bir konteyneri durdurmak için `Stop` fonksiyonunun nasıl kullanılacağını gösteren bir örnek:
+An example showing how to use the `Restart` function to restart a container named `my-web-server`:
 
 ```go
 package main
 
 import (
-	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
+    “log”
+    // You need to import the ‘pouch’ package according to your project.
 )
 
 func main() {
-	containerToStop := "my-nginx-proxy"
+    containerToRestart := “my-web-server”
 
-	log.Printf("'%s' konteyneri durduruluyor...", containerToStop)
+    log.Printf(“Restarting container ‘%s’...”, containerToRestart)
 
-	// pouch.Stop fonksiyonunu çağır
-	err := pouch.Stop(containerToStop)
+    // Call the pouch.Restart function
+    restartedID, err := pouch.Restart(containerToRestart)
 	if err != nil {
-		log.Fatalf("Konteyner durdurulamadı: %v", err)
-	}
+        log.Fatalf(“Container could not be restarted: %v”, err)
+    }
 
-	log.Printf("'%s' konteyneri başarıyla durduruldu!", containerToStop)
+    log.Printf(“Container (‘%s’) successfully restarted.”, restartedID)
 }
 ```

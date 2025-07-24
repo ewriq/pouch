@@ -1,8 +1,8 @@
-### `pouch.CopyToContainer` Fonksiyonu Açıklaması
+### **`pouch.CopyToContainer` Function Explanation**
 
-Bu Go kodu, `pouch` paketi içinde yer alan `CopyToContainer` adında bir fonksiyon tanımlar. Bu fonksiyonun temel amacı, yerel makinedeki (host) bir dosyayı veya dizini, çalışan bir Docker konteynerinin içine kopyalamaktır. Bu işlemi, arka planda `docker cp` komutunu çalıştırarak gerçekleştirir.
+This Go code defines a function named `CopyToContainer` within the `pouch` package. The primary purpose of this function is to copy a file or directory from the host machine to the inside of a running Docker container. It accomplishes this by executing the `docker cp` command in the background.
 
-#### Kod Bloğu
+#### Code Block
 
 ```go
 package pouch
@@ -12,66 +12,66 @@ import (
 	"os/exec"
 )
 
-// CopyToContainer, yerel makinedeki bir dosyayı veya dizini belirtilen Docker konteynerine kopyalar.
-// Bu işlem, "docker cp" komutunu kullanarak yapılır.
+// CopyToContainer copies a file or directory from the host machine to the specified Docker container.
+// This operation is performed using the "docker cp" command.
 func CopyToContainer(ID, HostPath, TargetPath string) error {
-	// "docker cp [HostPath] [ContainerID]:[TargetPath]" komutunu oluştur.
+	// Create the "docker cp [HostPath] [ContainerID]:[TargetPath]" command.
 	cmd := exec.Command("docker", "cp", HostPath, fmt.Sprintf("%s:%s", ID, TargetPath))
 	
-	// Komutu çalıştır ve standart çıktı ile standart hatayı birleştir.
+	// Execute the command and combine standard output and standard error.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// Hata durumunda, hem orijinal hatayı hem de komutun çıktısını içeren
-		// daha açıklayıcı bir hata mesajı döndür.
-		return fmt.Errorf("docker cp hatası: %v, çıktı: %s", err, string(out))
+		// In case of an error, return a more descriptive error message
+		// containing both the original error and the command's output.
+		return fmt.Errorf("docker cp error: %v, output: %s", err, string(out))
 	}
 	
-	// İşlem başarılıysa nil (hata yok) döndür.
+	// If the operation is successful, return nil (no error).
 	return nil
 }
 ```
 
-### Fonksiyon Detayları
+### Function Details
 
-1.  **Komut Oluşturma**:
-    `exec.Command("docker", "cp", HostPath, fmt.Sprintf("%s:%s", ID, TargetPath))` satırı, Go'nun `os/exec` paketini kullanarak yeni bir komut nesnesi oluşturur. Bu komut, terminalde çalıştırılacak olan `docker cp [HostPath] [ContainerID]:[TargetPath]` komutuna denktir.
+1.  **Command Creation**:
+    The line `exec.Command("docker", "cp", HostPath, fmt.Sprintf("%s:%s", ID, TargetPath))` uses Go's `os/exec` package to create a new command object. This is equivalent to the `docker cp [HostPath] [ContainerID]:[TargetPath]` command that would be run in a terminal.
 
-2.  **Komutu Çalıştırma ve Çıktıyı Yakalama**:
-    `cmd.CombinedOutput()` fonksiyonu, oluşturulan komutu çalıştırır. Hem standart çıktıyı (stdout) hem de standart hatayı (stderr) tek bir byte dizisinde (`out`) yakalar. Eğer komut başarıyla çalışmazsa, bir `error` nesnesi (`err`) döndürür. Bu yöntem, hata ayıklama için çok yararlıdır, çünkü komut başarısız olduğunda Docker'ın verdiği hata mesajını da görebiliriz.
+2.  **Executing the Command and Capturing Output**:
+    The `cmd.CombinedOutput()` function executes the created command. It captures both standard output (stdout) and standard error (stderr) into a single byte slice (`out`). If the command does not execute successfully, it returns an `error` object (`err`). This method is very useful for debugging because it allows us to see the error message provided by Docker when the command fails.
 
-3.  **Hata Kontrolü**:
-    `if err != nil` bloğu, komutun çalışması sırasında herhangi bir hata olup olmadığını kontrol eder. Eğer bir hata varsa (`err` `nil` değilse), fonksiyon `fmt.Errorf` ile detaylı bir hata mesajı oluşturur. Bu mesaj, orijinal hatayı (`%v`, `err`) ve komutun ürettiği çıktıyı (`%s`, `string(out)`) içerir. Bu sayede, fonksiyonu çağıran kod, hatanın nedenini kolayca anlayabilir.
+3.  **Error Handling**:
+    The `if err != nil` block checks if any error occurred during the command's execution. If there is an error (`err` is not `nil`), the function creates a detailed error message with `fmt.Errorf`. This message includes the original error (`%v`, `err`) and the output produced by the command (`%s`, `string(out)`). This allows the calling code to easily understand the reason for the failure.
 
-4.  **Başarılı Durum**:
-    Eğer komut başarıyla tamamlanırsa, fonksiyon `nil` (hata yok) döndürerek işlemin başarılı olduğunu belirtir.
+4.  **Success Case**:
+    If the command completes successfully, the function returns `nil` (no error), indicating that the operation was successful.
 
-### Parametreler
+### Parameters
 
-*   `ID (string)`: Kopyalama yapılacak Docker konteynerinin kimliği (ID) veya adı.
-*   `HostPath (string)`: Yerel makinede bulunan ve konteynere kopyalanacak olan dosyanın veya dizinin yolu.
-*   `TargetPath (string)`: Dosyanın veya dizinin konteyner içinde kopyalanacağı hedef yol.
+*   `ID (string)`: The ID or name of the Docker container to copy to.
+*   `HostPath (string)`: The path of the file or directory on the host machine that will be copied to the container.
+*   `TargetPath (string)`: The destination path inside the container where the file or directory will be copied.
 
-### Dönüş Değeri
+### Return Value
 
-*   `error`: Fonksiyon bir `error` değeri döndürür.
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   `docker cp` komutu başarısız olursa, komutun neden başarısız olduğuna dair bilgileri içeren bir hata nesnesi döndürülür.
+*   `error`: The function returns an `error` value.
+    *   If the operation is successful, this value is `nil`.
+    *   If the `docker cp` command fails, an error object is returned containing information about why the command failed.
 
-### Bağımlılıklar
+### Dependencies
 
-Bu fonksiyonun doğru çalışabilmesi için, kodu çalıştıran sistemde **Docker'ın yüklü olması** ve `docker` komutunun sistemin `PATH` değişkeninde bulunması gerekmektedir.
+For this function to work correctly, the system executing the code must **have Docker installed**, and the `docker` command must be available in the system's `PATH`.
 
-### Kullanım Örneği
+### Usage Example
 
-Yerel makinedeki `./config.yaml` dosyasını, `my-app-container` adlı konteynerin içindeki `/etc/app/` dizinine kopyalamak istediğimizi varsayalım.
+Let's assume we want to copy the local file `./config.yaml` to the `/etc/app/` directory inside a container named `my-app-container`.
 
 ```go
 package main
 
 import (
 	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
-	// Örneğin: "github.com/your-username/your-project/pouch"
+	// You need to import the 'pouch' package according to your project structure.
+	// For example: "github.com/your-username/your-project/pouch"
 )
 
 func main() {
@@ -79,12 +79,12 @@ func main() {
 	hostFile := "./config.yaml"
 	containerPath := "/etc/app/"
 
-	// pouch.CopyToContainer fonksiyonunu çağır
+	// Call the pouch.CopyToContainer function
 	err := pouch.CopyToContainer(containerID, hostFile, containerPath)
 	if err != nil {
-		log.Fatalf("Konteynere kopyalama başarısız oldu: %v", err)
+		log.Fatalf("Failed to copy to container: %v", err)
 	}
 
-	log.Println("Dosya başarıyla konteynere kopyalandı!")
+	log.Println("File successfully copied to the container!")
 }
 ```

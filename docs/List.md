@@ -1,8 +1,10 @@
-### `pouch.List` Fonksiyonu Açıklaması
 
-Bu Go kodu, `pouch` paketi içinde yer alan `List` adında bir fonksiyonu tanımlar. Fonksiyonun temel amacı, sistemde bulunan **tüm** Docker konteynerlerini (hem çalışanları hem de durdurulmuş olanları) listelemektir. Bu işlem, arka planda `docker ps -a` komutunu çalıştırarak gerçekleştirilir ve komutun ham metin çıktısını bir string olarak döndürür.
 
-#### Kod Bloğu
+### **`pouch.List` Function Explanation**
+
+This Go code defines a function named `List` within the `pouch` package. The primary purpose of this function is to list **all** Docker containers present on the system (both running and stopped). It accomplishes this by running the `docker ps -a` command in the background and returns the command's raw text output as a string.
+
+#### Code Block
 
 ```go
 package pouch
@@ -12,60 +14,60 @@ import (
 	"os/exec"
 )
 
-// List, sistemdeki tüm Docker konteynerlerini (çalışan ve durdurulmuş) listeler.
-// Sonuç olarak "docker ps -a" komutunun ham çıktısını döndürür.
+// List lists all Docker containers on the system (both running and stopped).
+// It returns the raw output of the "docker ps -a" command.
 func List() (string, error) {
-	// "docker ps -a" komutunu oluştur. `-a` bayrağı durdurulmuş olanlar dahil tüm
-	// konteynerleri listelemeyi sağlar.
+	// Create the "docker ps -a" command. The -a flag ensures that all containers,
+	// including stopped ones, are listed.
 	cmd := exec.Command("docker", "ps", "-a") 
 	
-	// Komutu çalıştır ve standart çıktı ile standart hatayı birleştir.
+	// Execute the command and combine standard output and standard error.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// Hata durumunda, hem orijinal hatayı hem de komutun çıktısını
-		// içeren açıklayıcı bir hata mesajı döndür.
-		return "", fmt.Errorf("listeleme hatası: %v, çıktı: %s", err, string(out))
+		// In case of an error, return a descriptive error message containing
+		// both the original error and the command's output.
+		return "", fmt.Errorf("listing error: %v, output: %s", err, string(out))
 	}
 	
-	// İşlem başarılıysa, komutun çıktısını string olarak döndür.
+	// If the operation is successful, return the command's output as a string.
 	return string(out), nil
 }
 ```
 
-### Fonksiyon Detayları
+### Function Details
 
-1.  **Komut Oluşturma**:
-    `exec.Command("docker", "ps", "-a")` satırı, terminalde `docker ps -a` komutunu çalıştırmak için bir komut nesnesi hazırlar.
-    *   `docker ps`: Genellikle çalışan konteynerleri listeler.
-    *   `-a` (`--all`): Bu bayrak, komutun durdurulmuş konteynerleri de listeye dahil etmesini sağlar. Bu fonksiyon, bu bayrağı standart olarak kullanarak sistemdeki tüm konteynerler hakkında bilgi verir.
+1.  **Command Creation**:
+    The line `exec.Command("docker", "ps", "-a")` prepares a command object to run the `docker ps -a` command in the terminal.
+    *   `docker ps`: Typically lists only running containers.
+    *   `-a` (`--all`): This flag makes the command include stopped containers in the list. This function uses this flag by default to provide information about all containers on the system.
 
-2.  **Komutu Çalıştırma ve Çıktıyı Yakalama**:
-    `cmd.CombinedOutput()` fonksiyonu, oluşturulan komutu çalıştırır. Komutun standart çıktısını (genellikle konteyner tablosu) ve standart hatasını (olası hata mesajları) tek bir byte dizisinde (`out`) birleştirir. Bu, özellikle Docker servisi çalışmıyorsa veya başka bir sorun varsa, hata mesajlarını yakalamak için çok kullanışlıdır.
+2.  **Executing the Command and Capturing Output**:
+    The `cmd.CombinedOutput()` function executes the created command. It combines the command's standard output (usually the container table) and standard error (any potential error messages) into a single byte slice (`out`). This is very useful for capturing error messages, especially if the Docker service is not running or if another issue occurs.
 
-3.  **Hata Kontrolü**:
-    `if err != nil` bloğu, komutun başarıyla çalışıp çalışmadığını kontrol eder. Örneğin, Docker daemon (servisi) çalışmıyorsa, `exec` paketi bir hata döndürür. Bu durumda fonksiyon, hatanın nedenini anlamayı kolaylaştırmak için hem orijinal Go hatasını (`err`) hem de Docker'dan gelen çıktıyı (`out`) içeren detaylı bir hata mesajı oluşturur.
+3.  **Error Handling**:
+    The `if err != nil` block checks whether the command executed successfully. For example, if the Docker daemon (service) is not running, the `exec` package will return an error. In this case, the function creates a detailed error message containing both the original Go error (`err`) and the output from Docker (`out`) to make it easier to understand the cause of the failure.
 
-4.  **Başarılı Durum**:
-    Komut hatasız bir şekilde tamamlandığında, `string(out)` ifadesiyle byte dizisi halindeki ham çıktı bir metne (string) dönüştürülür ve `nil` hata değeri ile birlikte geri döndürülür. Döndürülen metin, terminalde `docker ps -a` çalıştırdığınızda göreceğinizle birebir aynıdır.
+4.  **Success Case**:
+    When the command completes without an error, the raw output from the byte slice is converted to a string with the `string(out)` expression and is returned along with a `nil` error value. The returned text is identical to what you would see when running `docker ps -a` in the terminal.
 
-### Parametreler
+### Parameters
 
-*   Bu fonksiyon herhangi bir parametre **almaz**.
+*   This function takes **no** parameters.
 
-### Dönüş Değeri
+### Return Value
 
-*   `string`: İşlem başarılı olursa, tüm konteynerleri listeleyen ve terminalde görüneceği formatta olan ham metin çıktısı.
+*   `string`: On success, the raw text output listing all containers in the format they would appear in the terminal.
 *   `error`:
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   Eğer Docker servisine ulaşılamazsa veya başka bir `docker` hatası oluşursa, detaylı bilgi içeren bir hata nesnesi döndürülür.
+    *   If the operation is successful, this value is `nil`.
+    *   If the Docker service cannot be reached or another `docker` error occurs, an error object with detailed information is returned.
 
-### Bağımlılıklar
+### Dependencies
 
-Bu fonksiyonun beklendiği gibi çalışması için, Go kodunun çalıştığı ortamda **Docker'ın yüklü** olması ve `docker` komutunun sistemin `PATH` değişkeninde bulunması zorunludur.
+For this function to work as expected, **Docker must be installed** on the environment where the Go code is running, and the `docker` command must be in the system's `PATH`.
 
-### Kullanım Örneği
+### Usage Example
 
-Aşağıdaki örnek, sistemdeki tüm konteynerleri listelemek ve sonucu konsola yazdırmak için `List` fonksiyonunun nasıl kullanılacağını gösterir.
+The following example shows how to use the `List` function to list all containers on the system and print the result to the console.
 
 ```go
 package main
@@ -73,18 +75,18 @@ package main
 import (
 	"fmt"
 	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
+	// You need to import the 'pouch' package according to your project structure.
 )
 
 func main() {
-	// pouch.List fonksiyonunu çağırarak tüm konteynerlerin listesini al
+	// Call the pouch.List function to get the list of all containers
 	containerList, err := pouch.List()
 	if err != nil {
-		log.Fatalf("Konteynerler listelenemedi: %v", err)
+		log.Fatalf("Could not list containers: %v", err)
 	}
 
-	fmt.Println("Sistemdeki Tüm Docker Konteynerleri:")
-	// Dönen ham metni doğrudan ekrana yazdır
+	fmt.Println("All Docker Containers on the System:")
+	// Directly print the raw text returned by the function
 	fmt.Println(containerList)
 }
 ```

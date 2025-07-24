@@ -1,10 +1,8 @@
+### `pouch.Start` Function Explanation
 
+This Go function, `Start`, is part of the `pouch` package. Its primary role is to start a stopped Docker container by executing the `docker start` command under the hood. It returns only an `error` value to indicate success or failure.
 
-### `pouch.Start` Fonksiyonu Açıklaması
-
-Bu Go kodu, `pouch` paketi içinde yer alan `Start` adında bir fonksiyonu tanımlar. Fonksiyonun temel amacı, durdurulmuş durumdaki bir Docker konteynerini başlatmaktır. Bu işlem, arka planda `docker start` komutunu çalıştırarak gerçekleştirilir ve işlemin yalnızca başarı veya başarısızlık durumunu bir `error` değeriyle bildirir.
-
-#### Kod Bloğu
+#### Code Block
 
 ```go
 package pouch
@@ -14,77 +12,87 @@ import (
 	"os/exec"
 )
 
-// Start, belirtilen ID'ye sahip durdurulmuş bir Docker konteynerini başlatır.
+// Start starts a stopped Docker container with the given ID or name.
 func Start(id string) error {
-	// "docker start [id]" komutunu oluştur.
+	// Create the command: docker start [id]
 	cmd := exec.Command("docker", "start", id)
-	
-	// Komutu çalıştır ve standart çıktı ile standart hatayı birleştir.
-	// docker start başarılı olduğunda konteynerin ID'sini çıktı olarak verir,
-	// bu bilgi hata ayıklama için yakalanır.
+
+	// Execute the command and capture combined output (stdout + stderr)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// Hata durumunda, hem orijinal hatayı hem de komutun çıktısını
-		// içeren açıklayıcı bir hata mesajı döndür.
-		return fmt.Errorf("start hatası: %v, çıktı: %s", err, string(out))
+		// Return a detailed error message with both Go error and Docker output
+		return fmt.Errorf("start error: %v, output: %s", err, string(out))
 	}
-	
-	// İşlem başarılıysa, herhangi bir çıktı döndürmeden nil (hata yok) döndür.
+
+	// Return nil if successful
 	return nil
 }
 ```
 
-### Fonksiyon Detayları
+---
 
-1.  **Komut Oluşturma**:
-    `exec.Command("docker", "start", id)` satırı, terminalde `docker start [containerID]` komutunu çalıştırmak için bir komut nesnesi hazırlar.
+### Function Details
 
-2.  **Komutu Çalıştırma ve Çıktıyı Yakalama**:
-    `cmd.CombinedOutput()` fonksiyonu, oluşturulan komutu çalıştırır. `docker start` komutu, bir konteyneri başarıyla başlattığında o konteynerin ID'sini standart çıktıya yazar. Bir hata durumunda ise (örneğin konteyner bulunamadığında) hata mesajını standart hataya yazar. `CombinedOutput` fonksiyonu, her iki çıktıyı da tek bir `out` değişkeninde toplayarak, özellikle hata durumlarında Docker'ın döndürdüğü mesajı görmeyi sağlar.
+1. **Command Construction**:
+   The line `exec.Command("docker", "start", id)` constructs a command equivalent to typing `docker start [containerID]` in the terminal.
 
-3.  **Hata Kontrolü**:
-    `if err != nil` bloğu, komutun sıfırdan farklı bir çıkış koduyla sonlanıp sonlanmadığını kontrol eder. Eğer belirtilen ID'ye sahip bir konteyner mevcut değilse veya Docker servisi (daemon) çalışmıyorsa, `docker start` komutu hata verir. Fonksiyon bu hatayı yakalar ve `fmt.Errorf` kullanarak hem Go'nun genel hata bilgisini (`err`) hem de Docker'ın ürettiği spesifik çıktıyı (`out`) içeren detaylı bir hata mesajı oluşturur.
+2. **Command Execution and Output Capture**:
+   `cmd.CombinedOutput()` runs the command and captures both `stdout` and `stderr`. If the command fails (e.g., if the container does not exist), Docker writes the error to `stderr`. On success, it prints the container ID or name to `stdout`.
 
-4.  **Başarılı Durum**:
-    Komut başarıyla çalışırsa, `err` değişkeni `nil` olur. Bu fonksiyon, başarılı olduğunda komutun ürettiği çıktıyı (başlatılan konteynerin ID'si) döndürmez. Bunun yerine, sadece işlemin başarılı olduğunu belirtmek için `nil` değeri döndürür. Bu, "sadece yap ve sonucunu bildir" (fire-and-report) tarzı basit bir tasarım tercihidir.
+3. **Error Handling**:
+   The function checks whether the command failed using `if err != nil`. If Docker encounters a problem—such as the container not being found, or the Docker daemon being unavailable—the function wraps the error and the Docker output into a single, descriptive message using `fmt.Errorf`.
 
-### Parametreler
+4. **Success Case**:
+   If everything works, the function simply returns `nil`, indicating the operation succeeded. It does not return the container's ID or name—just the status of the operation.
 
-*   `id (string)`: Başlatılacak olan durdurulmuş Docker konteynerinin kimliği (ID) veya adı.
+---
 
-### Dönüş Değeri
+### Parameters
 
-*   `error`: Fonksiyon bir `error` değeri döndürür.
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   Eğer konteyner bulunamazsa, zaten çalışıyorsa (bu bir hata değildir ama yeniden başlatmaz) veya başka bir Docker hatası oluşursa, detaylı bilgi içeren bir hata nesnesi döndürülür.
+* `id (string)`: The ID or name of the Docker container to start.
 
-### Bağımlılıklar
+---
 
-*   Bu fonksiyonun çalışabilmesi için, kodu çalıştıran sistemde **Docker'ın yüklü olması** ve `docker` komutunun sistemin `PATH` değişkeni üzerinden erişilebilir olması gerekmektedir.
+### Return Value
 
-### Kullanım Örneği
+* `error`:
 
-Sistemde `my-database-container` adında durdurulmuş bir konteyneri başlatmak için `Start` fonksiyonunun nasıl kullanılacağını gösteren bir örnek:
+  * Returns `nil` if the container is started successfully.
+  * Returns a detailed error if the container cannot be found, if Docker is not running, or if another problem occurs.
+
+---
+
+### Requirements
+
+* Docker must be installed on the host machine.
+* The `docker` command must be accessible via the system’s `PATH`.
+
+---
+
+### Example Usage
+
+The following example demonstrates how to start a stopped container named `my-database-container` using the `pouch.Start` function:
 
 ```go
 package main
 
 import (
 	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
+	"github.com/your-username/your-project/pouch" // Replace with your actual import path
 )
 
 func main() {
 	containerToStart := "my-database-container"
 
-	log.Printf("'%s' konteyneri başlatılıyor...", containerToStart)
+	log.Printf("Starting container '%s'...", containerToStart)
 
-	// pouch.Start fonksiyonunu çağır
+	// Call pouch.Start
 	err := pouch.Start(containerToStart)
 	if err != nil {
-		log.Fatalf("Konteyner başlatılamadı: %v", err)
+		log.Fatalf("Failed to start container: %v", err)
 	}
 
-	log.Printf("'%s' konteyneri başarıyla başlatıldı!", containerToStart)
+	log.Printf("Container '%s' started successfully!", containerToStart)
 }
 ```
+

@@ -1,9 +1,9 @@
 
-### `pouch.Exec` Fonksiyonu Açıklaması
+### **`pouch.Exec` Function Explanation**
 
-Bu Go kodu, `pouch` paketi içinde yer alan `Exec` adında genel amaçlı bir fonksiyon tanımlar. Fonksiyonun temel amacı, çalışan bir Docker konteynerinin içinde istenilen herhangi bir komutu çalıştırmak ve bu komutun ürettiği çıktıyı (hem standart çıktı hem de standart hata) bir metin olarak geri döndürmektir. Bu, `docker exec` komutunu programatik olarak kullanmak için güçlü ve esnek bir yöntem sunar.
+This Go code defines a general-purpose function named `Exec` within the `pouch` package. The primary purpose of this function is to run any desired command inside a running Docker container and return the command's output (both standard output and standard error) as a string. This provides a powerful and flexible method for programmatically using the `docker exec` command.
 
-#### Kod Bloğu
+#### Code Block
 
 ```go
 package pouch
@@ -13,66 +13,66 @@ import (
 	"os/exec"
 )
 
-// Exec, belirtilen ID'ye sahip bir Docker konteyneri içinde verilen komutu çalıştırır.
-// Komutun standart çıktı (stdout) ve standart hatasını (stderr) birleştirilmiş
-// bir string olarak döndürür.
+// Exec runs the given command inside a Docker container with the specified ID.
+// It returns the combined standard output (stdout) and standard error (stderr)
+// of the command as a single string.
 func Exec(id string, command []string) (string, error) {
-	// "docker exec [id]" komutunun temel argümanlarını oluştur ve 
-	// çalıştırılacak komutu bu argümanların sonuna ekle.
+	// Create the base arguments for "docker exec [id]" and
+	// append the command to be executed to these arguments.
 	args := append([]string{"exec", id}, command...)
 	
-	// Docker komutunu oluştur.
+	// Create the Docker command.
 	cmd := exec.Command("docker", args...)
 
-	// Komutu çalıştır ve hem standart çıktıyı hem de standart hatayı yakala.
+	// Execute the command and capture both standard output and standard error.
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		// Hata durumunda, hem Go'nun hata nesnesini hem de komutun çıktısını
-		// içeren detaylı bir hata mesajı döndür.
-		return "", fmt.Errorf("exec hatası: %v\nçıktı: %s", err, out)
+		// In case of an error, return a detailed error message containing
+		// both Go's error object and the command's output.
+		return "", fmt.Errorf("exec error: %v\noutput: %s", err, out)
 	}
 
-	// Başarılı olursa, komutun çıktısını string olarak döndür.
+	// If successful, return the command's output as a string.
 	return string(out), nil
 }
 ```
 
-### Fonksiyon Detayları
+### Function Details
 
-1.  **Argümanların Birleştirilmesi**:
-    `args := append([]string{"exec", id}, command...)` satırı, fonksiyonun temelini oluşturur.
-    *   İlk olarak `[]string{"exec", id}` dilimi ile `docker exec [containerID]` komutunun başlangıcı hazırlanır.
-    *   Daha sonra `append` fonksiyonu ve `...` operatörü kullanılarak, `command` parametresi olarak gelen `string` diliminin tüm elemanları (`çalıştırılacak_komut` ve `argümanları`) bu listeye eklenir. Örneğin, `command` `[]string{"ls", "-la", "/app"}` ise, `args` dilimi `[]string{"exec", "my-container", "ls", "-la", "/app"}` haline gelir. Bu yapı, komutları güvenli bir şekilde (shell injection riski olmadan) oluşturmayı sağlar.
+1.  **Argument Combination**:
+    The line `args := append([]string{"exec", id}, command...)` forms the foundation of the function.
+    *   First, the slice `[]string{"exec", id}` prepares the beginning of the `docker exec [containerID]` command.
+    *   Then, using the `append` function and the `...` operator, all elements of the `string` slice passed as the `command` parameter (the `command_to_run` and its `arguments`) are added to this list. For example, if `command` is `[]string{"ls", "-la", "/app"}`, the `args` slice becomes `[]string{"exec", "my-container", "ls", "-la", "/app"}`. This structure allows for building commands safely (without the risk of shell injection).
 
-2.  **Komutun Çalıştırılması**:
-    `cmd := exec.Command("docker", args...)` ile çalıştırılacak tam komut nesnesi yaratılır. `cmd.CombinedOutput()` fonksiyonu bu komutu çalıştırır ve en önemli özelliklerinden biri olan standart çıktı (stdout) ile standart hatayı (stderr) tek bir byte dizisinde (`out`) birleştirir. Bu, komut başarısız olduğunda bile hata mesajlarını yakalamayı garanti eder.
+2.  **Command Execution**:
+    The complete command object to be run is created with `cmd := exec.Command("docker", args...)`. The `cmd.CombinedOutput()` function executes this command and, one of its key features, combines standard output (stdout) and standard error (stderr) into a single byte slice (`out`). This guarantees that error messages are captured even when a command fails.
 
-3.  **Hata Yönetimi**:
-    `if err != nil` bloğu, komutun sıfırdan farklı bir çıkış koduyla sonlanması gibi hata durumlarını yakalar. Bu durumda, `fmt.Errorf` ile oldukça bilgilendirici bir hata mesajı oluşturulur. Bu mesaj hem Go seviyesindeki hatayı (`err`) hem de komutun kendisinin ürettiği çıktıyı (`out`) içerir. Bu sayede, hata ayıklama süreci büyük ölçüde kolaylaşır.
+3.  **Error Management**:
+    The `if err != nil` block catches error conditions, such as when a command terminates with a non-zero exit code. In this case, a highly informative error message is generated with `fmt.Errorf`. This message contains both the Go-level error (`err`) and the output produced by the command itself (`out`), which greatly simplifies the debugging process.
 
-4.  **Başarılı Çıktı**:
-    Komut başarıyla çalışırsa (çıkış kodu 0 ise), yakalanan çıktı (`out` byte dizisi) `string(out)` ifadesiyle bir metne dönüştürülür ve `nil` hatasıyla birlikte döndürülür.
+4.  **Successful Output**:
+    If the command runs successfully (with an exit code of 0), the captured output (`out` byte slice) is converted to a string with `string(out)` and returned along with a `nil` error.
 
-### Parametreler
+### Parameters
 
-*   `id (string)`: İçinde komut çalıştırılacak olan Docker konteynerinin kimliği (ID) veya adı.
-*   `command ([]string)`: Konteyner içinde çalıştırılacak olan komut ve argümanlarını içeren bir `string` dilimi. Dilimin ilk elemanı komutun kendisi, sonraki elemanlar ise argümanları olmalıdır.
+*   `id (string)`: The ID or name of the Docker container inside which the command will be run.
+*   `command ([]string)`: A slice of strings containing the command and its arguments to be run inside the container. The first element of the slice should be the command itself, and subsequent elements should be its arguments.
 
-### Dönüş Değeri
+### Return Value
 
-*   `string`: Komutun çalışması sonucu ortaya çıkan birleştirilmiş standart çıktı ve standart hata metni.
+*   `string`: The combined standard output and standard error text resulting from the command's execution.
 *   `error`:
-    *   İşlem başarılı olursa bu değer `nil` olur.
-    *   `docker exec` komutu başarısız olursa (örneğin konteyner çalışmıyorsa veya komut hata verirse), detaylı bilgi içeren bir hata nesnesi döndürülür.
+    *   If the operation is successful, this value will be `nil`.
+    *   If the `docker exec` command fails (e.g., if the container is not running or the command returns an error), an error object with detailed information is returned.
 
-### Önemli Notlar
+### Important Notes
 
-*   Bu fonksiyonun çalışabilmesi için sistemde **Docker'ın kurulu** ve `docker` komutunun `PATH` içinde erişilebilir olması gerekir.
-*   Hedef konteynerin `id` ile belirtilen kimlikle **çalışıyor durumda** olması zorunludur.
+*   For this function to work, **Docker must be installed** on the system, and the `docker` command must be accessible in the system's `PATH`.
+*   The target container specified by `id` must be in a **running state**.
 
-### Kullanım Örneği
+### Usage Example
 
-`my-app` adlı bir konteynerin içindeki tüm ortam değişkenlerini (`env` komutu ile) listelemek için:
+To list all environment variables inside a container named `my-app` (using the `env` command):
 
 ```go
 package main
@@ -80,21 +80,21 @@ package main
 import (
 	"fmt"
 	"log"
-	// 'pouch' paketini projenize göre import etmeniz gerekir.
+	// You need to import the 'pouch' package according to your project structure.
 )
 
 func main() {
 	containerID := "my-app"
-	commandToRun := []string{"env"} // Sadece komut, argüman yok.
+	commandToRun := []string{"env"} // Just the command, no arguments.
 
-	// Konteynerdeki /etc dizinini listelemek için:
+	// To list the /etc directory in the container:
 	// commandToRun := []string{"ls", "-l", "/etc"}
 
 	output, err := pouch.Exec(containerID, commandToRun)
 	if err != nil {
-		log.Fatalf("Konteyner içinde komut çalıştırılamadı: %v", err)
+		log.Fatalf("Failed to run command in container: %v", err)
 	}
 
-	fmt.Printf("'%s' konteynerinden gelen çıktı:\n%s", containerID, output)
+	fmt.Printf("Output from container '%s':\n%s", containerID, output)
 }
 ```
