@@ -3,14 +3,14 @@ package container
 import (
 	"fmt"
 	"os/exec"
-	"strings"
+
 )
 
-func Inspect(id string) (string, error) {
+func Inspect(id string) ([]byte, error) {
 	cmd := exec.Command("docker", "inspect", id)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", fmt.Errorf("inspect error: %v\noutput: %s", err, out)
+		return []byte{} , fmt.Errorf("inspect error: %v\noutput: %s", err, out)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return out, nil
 }
